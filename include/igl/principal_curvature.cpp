@@ -153,6 +153,8 @@ public:
   Eigen::MatrixXd face_normals;
   Eigen::MatrixXd vertex_normals;
 
+  std::vector<bool> visited;
+
   /* Size of the neighborhood */
   double sphereRadius;
   int kRing;
@@ -330,6 +332,8 @@ IGL_INLINE void CurvatureCalculator::init(const Eigen::MatrixXd& V, const Eigen:
   igl::vertex_triangle_adjacency(V, F, vertex_to_faces, vertex_to_faces_index);
   igl::per_face_normals(V, F, face_normals);
   igl::per_vertex_normals(V, F, face_normals, vertex_normals);
+
+  visited = std::vector<bool>(vertices.rows(), false);
 }
 
 IGL_INLINE void CurvatureCalculator::fitQuadric(const Eigen::Vector3d& v, const std::vector<Eigen::Vector3d>& ref, const std::vector<int>& vv, Quadric *q)
@@ -447,11 +451,14 @@ IGL_INLINE void CurvatureCalculator::finalEigenStuff(int i, const std::vector<Ei
 IGL_INLINE void CurvatureCalculator::getKRing(const int start, const double r, std::vector<int>&vv)
 {
   int bufsize=vertices.rows();
-  vv.reserve(bufsize);
-  std::list<std::pair<int,int> > queue;
-  std::vector<bool> visited(bufsize, false);
+  // vv.reserve(400);
+  std::list<std::pair<int, int> > queue;
   queue.push_back(std::pair<int,int>(start,0));
+  std::vector<int> vis_list;
+  // vis_list.reserve(400);
   visited[start]=true;
+  vis_list.push_back(start);
+
   while (!queue.empty())
   {
     int toVisit=queue.front().first;
@@ -469,10 +476,16 @@ IGL_INLINE void CurvatureCalculator::getKRing(const int start, const double r, s
           {
             queue.push_back(std::pair<int,int> (neighbor,distance+1));
             visited[neighbor]=true;
+            vis_list.push_back(neighbor);
           }
         }
       }
     }
+  }
+
+  for (auto&& i : vis_list)
+  {
+      visited[i] = false;
   }
 }
 
